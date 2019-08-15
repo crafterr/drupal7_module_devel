@@ -18,9 +18,22 @@ function article_block_help($path, $arg) {
 }
 
 
-function article_menu() {
-  $items['abc/def'] = array(
-    'page callback' => 'mymodule_abc_view',
+function article_block_menu() {
+  $items['admin/config/content/article_block'] = array(
+    'title' => 'Article block Settings',
+    'description' => 'Administer the Article Block settings',
+    'page callback' => 'drupal_get_form',
+    'page arguments' => array('article_block_settings_form'),
+    'access arguments' => array('manage article block settings'),
+    'file' => 'article_block.admin.inc'
   );
+  $items['admin/reports/article_block'] = array(
+    'title' => 'Article Block Post',
+    'description' => 'View all  the Article posts',
+    'page callback' => 'article_block_posts',
+    'access arguments' => array('view article block posts'),
+    'file' => 'article_block.admin.inc',
+  );
+
   return $items;
 }
