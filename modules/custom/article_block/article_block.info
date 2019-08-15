@@ -3,7 +3,6 @@ description = Provide a block that show posts from article content type
 core = 7.x
 package = Other
 version = 1.x-dev
-#configuration path
 configure = admin/config/content/article_block
 dependencies[] = block
 dependencies[] = feeds

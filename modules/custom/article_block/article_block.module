@@ -16,3 +16,11 @@ function article_block_help($path, $arg) {
       return $output;
   }
 }
+
+
+function article_menu() {
+  $items['abc/def'] = array(
+    'page callback' => 'mymodule_abc_view',
+  );
+  return $items;
+}
