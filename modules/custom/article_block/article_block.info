@@ -7,3 +7,4 @@ configure = admin/config/content/article_block
 dependencies[] = block
 dependencies[] = feeds
 files[] = article_block.module
+files[] = article_block.admin.inc

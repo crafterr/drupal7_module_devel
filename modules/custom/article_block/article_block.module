@@ -19,21 +19,62 @@ function article_block_help($path, $arg) {
 
 
 function article_block_menu() {
-  $items['admin/config/content/article_block'] = array(
+  $items['admin/config/content/article_block'] = [
     'title' => 'Article block Settings',
     'description' => 'Administer the Article Block settings',
     'page callback' => 'drupal_get_form',
     'page arguments' => array('article_block_settings_form'),
     'access arguments' => array('manage article block settings'),
     'file' => 'article_block.admin.inc'
-  );
-  $items['admin/reports/article_block'] = array(
+  ];
+
+  $items['admin/reports/article_block'] = [
     'title' => 'Article Block Post',
     'description' => 'View all  the Article posts',
     'page callback' => 'article_block_posts',
     'access arguments' => array('view article block posts'),
     'file' => 'article_block.admin.inc',
-  );
+  ];
 
   return $items;
+}
+
+function article_block_permission() {
+  return [
+    'view article block posts' => [
+      'title' => t('View Article Block Posts'),
+      'description' => t('View Article Block Posts.'),
+    ],
+    'manage article block settings' => [
+      'title' => t('Manage Article Block Settings'),
+      'description' => t('Allow users to manage Article Block settings page.'),
+    ]
+  ];
+}
+
+/**
+ * Implements hook_form_alter().
+ */
+function article_block_form_alter(&$form, &$form_state, $form_id) {
+  $node = $form['#node'];
+  $types = variable_get('article_block_types',[]);
+
+  //check if this node type is enabled in setting for this bundle
+  //and that user has access to settings
+
+  if ($types[$node->type] && user_access('manage article block settings')) {
+
+    //add the new fieldset with a checkbox for per node settings
+    $form['article_block'] = [
+      '#title' => t('Article Block'),
+      '#type' => 'fieldset',
+      '#collapsible' => TRUE,
+      '#group' => 'additional_settings'
+    ];
+    $form['article_block']['article_block_enabled'] = [
+      '#title' => t('Allow this node to be posted to the block'),
+      '#type' => 'checkbox',
+      '#default_value' => isset($node->article_block_enabled) ? $node->article_block_enabled: false
+    ];
+  }
 }
