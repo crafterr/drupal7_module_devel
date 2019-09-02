@@ -52,18 +52,22 @@ function article_block_permission() {
   ];
 }
 
+
+
 /**
  * Implements hook_form_alter().
+ * normal article_block_form_alter()
+ * moduleName_form_formId_alter
  */
-function article_block_form_alter(&$form, &$form_state, $form_id) {
+function article_block_form_node_form_alter(&$form, &$form_state, $form_id) {
   $node = $form['#node'];
   $types = variable_get('article_block_types',[]);
 
   //check if this node type is enabled in setting for this bundle
   //and that user has access to settings
 
-  if ($types[$node->type] && user_access('manage article block settings')) {
 
+  if ($types[$node->type] && user_access('manage article block settings')) {
     //add the new fieldset with a checkbox for per node settings
     $form['article_block'] = [
       '#title' => t('Article Block'),
@@ -76,5 +80,137 @@ function article_block_form_alter(&$form, &$form_state, $form_id) {
       '#type' => 'checkbox',
       '#default_value' => isset($node->article_block_enabled) ? $node->article_block_enabled: false
     ];
+  }
+}
+
+/**
+ * Implements hook_node_load().
+ */
+function article_block_node_load($nodes, $types) {
+
+  foreach ($nodes as $nid => $node) {
+    $node->article_block_enabled = article_block_get_node_enabled($node->nid);
+  }
+
+}
+
+/**
+ * Implements hook_node_insert().
+ */
+function article_block_node_insert($node) {
+  //sprawdz pole checkobox i jesli jest zaznaczony wtedy zrob insert do tabeli article_block_enabled
+  if ($node->article_block_enabled) {
+    article_block_set_node_enabled($node->nid);
+  }
+}
+
+/**
+ * Implements hook_node_update().
+ */
+function article_block_node_update($node) {
+  //usun z tabeli article_block_enabled nid i sprawdz checkbox i jesli jest zaznaczony to zrob insert do tabeli article_block_enabled
+  article_block_delete_node_enabled($node->nid);
+
+  if ($node->article_block_enabled) {
+    article_block_set_node_enabled($node->nid);
+  }
+
+}
+
+/**
+ * Implements hook_node_delete().
+ */
+function article_block_node_delete($node) {
+  article_block_delete_node_enabled($node->nid);
+}
+
+
+/**
+ * @param $nid
+ *
+ * @return boolean
+ */
+function article_block_get_node_enabled($nid) {
+  if (is_numeric($nid)) {
+    //return string nodeId 61 or false
+    $result = db_query("SELECT nid FROM {article_block_enabled} WHERE nid = :nid",['nid'=>$nid])->fetchField();
+
+    if ($result) {
+      return true;
+    }
+    return false;
+  }
+}
+
+
+/**
+ * Add entry's for a node
+ */
+function article_block_set_node_enabled($nid) {
+  if (is_numeric($nid)) {
+
+    if (!article_block_get_node_enabled($nid)) {
+        db_insert('article_block_enabled')
+        ->fields(['nid'=>$nid])
+        ->execute();
+    }
+  }
+}
+
+
+function article_block_delete_node_enabled($nid) {
+  if (is_numeric($nid)) {
+    db_delete('article_block_enabled')
+      ->condition('nid',$nid)
+      ->execute();
+  }
+}
+
+
+
+/**
+ * block hooks
+ */
+/**
+ * Implements hook_block_info().
+ */
+function article_block_block_info() {
+  // This example comes from node.module.
+  $blocks['posts'] = [
+    'info' => t('Article Block'),
+    'cache' => DRUPAL_NO_CACHE
+  ];
+
+  return $blocks;
+}
+
+/**
+ * Implements hook_block_view().
+ */
+function article_block_block_view($delta = '') {
+
+  switch ($delta) {
+    case 'posts':
+      $block['subject'] = t('Article Block Posts');
+      $block['content'] = article_block_block_contents($delta);
+      return $block;
+      break;
+  }
+
+}
+
+function article_block_block_contents($delta = '') {
+  switch ($delta) {
+    case 'posts':
+      if (user_access('access content')) {
+        $result = db_query("select nid,title,type from {node} where type = 'article'");
+        $items = [];
+        foreach ($result as $row) {
+
+          $items[] = l($row->title,'node/'.$row->nid.'/');
+        }
+        
+        return ['#markup' => theme('item_list',['items'=>$items])];
+      }
   }
 }
